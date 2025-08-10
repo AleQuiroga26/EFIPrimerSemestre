@@ -1,3 +1,34 @@
-#carpetas a ignorar
+# Archivos de Python compilados
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entornos virtuales
+venv/
+.env/
 .enviroment/
+
+# Archivos de configuración local
+*.env
+*.ini
+*.cfg
+instance/
+*.sqlite
+*.sqlite3
+*.db
+
+# Archivos de migraciones automáticas
+migrations/
+
+# Archivos de logs
+*.log
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos creados por herramientas
+*.pytest_cache/
+.coverage
+htmlcov/
