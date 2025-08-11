@@ -1,18 +1,57 @@
-{% extends 'layout.html' %}
+{% extends "base.html" %}
 
-{% block title %}Inicio{% endblock %}
+{% block title %}MiniBlog - Inicio{% endblock %}
 
 {% block content %}
-    <h2>Últimos Posts</h2>
-    {% for post in posts %}
-        <div class="post">
-            <h3>{{ post.titulo }}</h3>
-            <p><em>Publicado el {{ post.fecha_create.strftime('%d/%m/%Y') }}</em></p>
-            <p>{{ post.contenido[:150] }}...</p>
-            <p><strong>Autor ID:</strong> {{ post.autor_id }}</p>
-            <hr>
-        </div>
+<main class="container my-5">
+
+  {% if session.get('user_id') %}
+    <h1 class="mb-4">Entradas recientes</h1>
+
+    {% if posts %}
+      <div class="list-group">
+        {% for post in posts %}
+          <a href="{{ url_for('ver_post', post_id=post.id) }}" 
+             class="list-group-item list-group-item-action mb-3 shadow-sm rounded">
+            <h5 class="mb-1">{{ post.titulo }}</h5>
+            <small class="text-muted">
+              por {{ post.autor.name }} - {{ post.fecha_create.strftime('%d/%m/%Y %H:%M') }}
+            </small>
+            <p class="mb-1 mt-2">
+              {{ post.contenido[:150] }}{% if post.contenido|length > 150 %}...{% endif %}
+            </p>
+          </a>
+        {% endfor %}
+      </div>
     {% else %}
-        <p>No hay posts aún.</p>
-    {% endfor %}
+      <p class="mt-3">No hay posteos todavía.</p>
+    {% endif %}
+
+  {% else %}
+    <h1 class="mb-4">Bienvenido a MiniBlog</h1>
+    <p class="lead">MiniBlog es una app estilo Instagram, donde podés compartir tus ideas, fotos, o lo que quieras.</p>
+    <p>Para empezar a publicar y ver el contenido completo, primero registrate o iniciá sesión.</p>
+    <p>Mientras tanto, podés navegar y ver las publicaciones públicas que ya están disponibles.</p>
+
+    {% if posts %}
+      <div class="list-group mt-4">
+        {% for post in posts %}
+          <a href="{{ url_for('ver_post', post_id=post.id) }}" 
+             class="list-group-item list-group-item-action mb-3 shadow-sm rounded">
+            <h5 class="mb-1">{{ post.titulo }}</h5>
+            <small class="text-muted">
+              por {{ post.autor.name }} - {{ post.fecha_create.strftime('%d/%m/%Y %H:%M') }}
+            </small>
+            <p class="mb-1 mt-2">
+              {{ post.contenido[:150] }}{% if post.contenido|length > 150 %}...{% endif %}
+            </p>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="mt-3">No hay posteos todavía.</p>
+    {% endif %}
+  {% endif %}
+
+</main>
 {% endblock %}
