@@ -1,168 +1,224 @@
-from flask import ( #importo Flask y librerias
+from flask import (  # importo todo lo que necesito para hacer la app web y manejar formularios, sesiones, mensajes, etc.
     Flask,
     render_template,
     request,
     redirect,
     url_for,
     flash,
-    session
+    session,
 )
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
+from flask_migrate import (
+    Migrate,
+)  # para manejar migraciones de la base de datos (cambios en tablas)
+from flask_sqlalchemy import (
+    SQLAlchemy,
+)  # para trabajar con la base de datos usando objetos de Python
+from werkzeug.security import (
+    generate_password_hash,
+)  # para guardar contraseñas encriptadas
 import os
-from dotenv import load_dotenv
+from dotenv import (
+    load_dotenv,
+)  # para cargar variables desde un archivo .env (configuración secreta)
 
-load_dotenv()  #carga las variables del archivo .env
+load_dotenv()  # traigo esas variables (como la URL de la base de datos y la clave secreta)
 
-app = Flask(__name__)
+app = Flask(__name__)  # creo la app
 
-#configuraciones usando variables de entorno
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
-app.secret_key = os.getenv('SECRET_KEY')
+# configuro la conexión a la base de datos y la clave para las sesiones usando lo que cargué del .env
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
+app.secret_key = os.getenv("SECRET_KEY")
 
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+db = SQLAlchemy(app)  # inicio la base de datos
+migrate = Migrate(app, db)  # inicio el sistema de migraciones para la base
+
+from models import User, Post, Comentary, Category  # traigo mis tablas (modelos)
 
 
-from models import User, Post, Comentary, Category
+# Esto sirve para que la lista de categorías esté disponible en todas las plantillas, sin tener que pasarla en cada ruta
+@app.context_processor
+def injectar_categorias():
+    categorias = Category.query.order_by(
+        Category.id
+    ).all()  # traigo las categorías ordenadas por id
+    return dict(
+        categorias=categorias
+    )  # las pongo disponibles como variable 'categorias' en los templates
 
-@app.route('/')
+
+@app.route("/")  # ruta principal que muestra los posts
 def index():
-    posts_list = Post.query.order_by(Post.fecha_create.desc()).all()
-    return render_template("index.html", posts=posts_list) #nombre_en_html = nombre_en_back
+    posts_list = Post.query.order_by(
+        Post.fecha_create.desc()
+    ).all()  # traigo todos los posts ordenados por fecha, del más nuevo al más viejo
+    return render_template(
+        "index.html", posts=posts_list
+    )  # mando esa lista a la plantilla para mostrarla
 
-@app.route('/nuevo_post', methods=['GET', 'POST'])
+
+@app.route("/nuevo_post", methods=["GET", "POST"])  # ruta para crear un post nuevo
 def nuevo_post():
 
-    if 'user_id' not in session:
-        flash('Debes iniciar sesión para crear un post.', 'warning')
-        return redirect(url_for('login'))
+    # si no está logueado, lo mando a la página de login
+    if "user_id" not in session:
+        flash("Debes iniciar sesión para crear un post.", "warning")
+        return redirect(url_for("login"))
 
     if request.method == "POST":
+        # saco los datos que el usuario puso en el formulario
         titulo = request.form["titulo"]
         contenido = request.form["contenido"]
         categoria_id = request.form["categoria_id"]
 
+        # creo el post nuevo y lo asocio con el usuario que está logueado
         nuevo = Post(
             titulo=titulo,
             contenido=contenido,
             categoria_id=categoria_id,
-            autor_id=session['user_id'] 
+            autor_id=session["user_id"],
         )
 
-        db.session.add(nuevo)
-        db.session.commit()
-        flash('Post creado con éxito.', 'success')
-        return redirect(url_for("index"))
-    
-    categorias = Category.query.all()
-    return render_template("nuevoPost.html", categorias=categorias)
+        db.session.add(nuevo)  # lo agrego a la base de datos
+        db.session.commit()  # guardo los cambios
+        flash("Post creado con éxito.", "success")
+        return redirect(url_for("index"))  # vuelvo al inicio
+
+    return render_template(
+        "nuevoPost.html"
+    )  # si entró por GET, muestro el formulario para crear post
 
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route("/register", methods=["GET", "POST"])  # ruta para registrarse
 def register():
-    if request.method == 'POST':
-        name = request.form['name'].strip()
-        correo = request.form['correo'].strip()
-        password = request.form['password']
-        password2 = request.form['password2']
+    if request.method == "POST":
+        # saco datos del formulario y elimino espacios al principio y final
+        name = request.form["name"].strip()
+        correo = request.form["correo"].strip()
+        password = request.form["password"]
+        password2 = request.form["password2"]
 
-        # Validar campos vacíos
+        # chequeo que no falte ningún dato
         if not name or not correo or not password:
-            flash('Por favor, completá todos los campos.', 'danger')
-            return redirect(url_for('register'))
+            flash("Por favor, completá todos los campos.", "danger")
+            return redirect(url_for("register"))
 
-        # Validar que no exista otro usuario con mismo nombre o correo
+        # chequeo que no haya otro usuario con el mismo nombre o correo
         existe_nombre = User.query.filter_by(name=name).first()
         existe_correo = User.query.filter_by(correo=correo).first()
         if existe_nombre:
-            flash('El nombre de usuario ya existe.', 'danger')
-            return redirect(url_for('register'))
+            flash("El nombre de usuario ya existe.", "danger")
+            return redirect(url_for("register"))
         if existe_correo:
-            flash('El correo ya está registrado.', 'danger')
-            return redirect(url_for('register'))
-        
-        if password != password2:
-            flash('Las contrasenias no coinciden.', 'danger')
-            return redirect(url_for('register'))
+            flash("El correo ya está registrado.", "danger")
+            return redirect(url_for("register"))
 
-        # Hashear contraseña 
+        # chequeo que las contraseñas coincidan
+        if password != password2:
+            flash("Las contrasenias no coinciden.", "danger")
+            return redirect(url_for("register"))
+
+        # guardo la contraseña encriptada para no guardar la original
         password_hash = generate_password_hash(password)
 
-        # Crear nuevo usuario
+        # creo y guardo el nuevo usuario en la base
         nuevo_usuario = User(name=name, correo=correo, password=password_hash)
         db.session.add(nuevo_usuario)
         db.session.commit()
 
-        flash('Usuario registrado con éxito.', 'success')
-        return redirect(url_for('index')) 
+        flash("Usuario registrado con éxito.", "success")
+        return redirect(url_for("index"))  # lo mando al inicio después de registrarse
 
-    return render_template('register.html')
+    return render_template(
+        "register.html"
+    )  # si entró por GET, muestro el formulario para registrarse
 
-from werkzeug.security import check_password_hash
 
-@app.route('/login', methods=['GET', 'POST'])
+from werkzeug.security import check_password_hash  # para verificar contraseñas
+
+
+@app.route("/login", methods=["GET", "POST"])  # ruta para iniciar sesión
 def login():
-    if request.method == 'POST':
-        name = request.form['name'].strip()
-        password = request.form['password']
+    if request.method == "POST":
+        name = request.form["name"].strip()
+        password = request.form["password"]
 
-        # Validar campos vacíos
+        # valido que no falten datos
         if not name or not password:
-            flash('Por favor, completá todos los campos.', 'danger')
-            return redirect(url_for('login'))
+            flash("Por favor, completá todos los campos.", "danger")
+            return redirect(url_for("login"))
 
-        # Buscar usuario por nombre
+        # busco al usuario por nombre
         usuario = User.query.filter_by(name=name).first()
         if not usuario:
-            flash('Nombre de usuario o contraseña incorrectos.', 'danger')
-            return redirect(url_for('login'))
+            flash("Nombre de usuario o contraseña incorrectos.", "danger")
+            return redirect(url_for("login"))
 
-        # Verificar contraseña
+        # verifico que la contraseña sea correcta
         if not check_password_hash(usuario.password, password):
-            flash('Nombre de usuario o contraseña incorrectos.', 'danger')
-            return redirect(url_for('login'))
-        
-        session['user_id'] = usuario.id
-        session['user_name'] = usuario.name
+            flash("Nombre de usuario o contraseña incorrectos.", "danger")
+            return redirect(url_for("login"))
 
-        flash('Has iniciado sesión correctamente.', 'success')
-        return redirect(url_for('index'))
+        # si está todo bien, guardo el usuario en la sesión para que quede logueado
+        session["user_id"] = usuario.id
+        session["user_name"] = usuario.name
 
-    return render_template('login.html')
+        flash("Has iniciado sesión correctamente.", "success")
+        return redirect(url_for("index"))
 
-@app.route('/logout')
+    return render_template("login.html")  # formulario para login
+
+
+@app.route("/logout")  # cerrar sesión
 def logout():
-    session.clear()  
-    flash('Has cerrado sesión.', 'success')
-    return redirect(url_for('index'))
+    session.clear()  # borro todo de la sesión para desconectarlo
+    flash("Has cerrado sesión.", "success")
+    return redirect(url_for("index"))  # vuelvo al inicio
 
-@app.route('/post/<int:post_id>')
+
+@app.route(
+    "/post/<int:post_id>", methods=["GET", "POST"]
+)  # página para ver un post y agregar comentarios
 def ver_post(post_id):
-    post = Post.query.get_or_404(post_id)
-    return render_template('verPost.html', post=post)
+    post = Post.query.get_or_404(
+        post_id
+    )  # busco el post o muestro error 404 si no existe
 
-@app.route('/nuevo_categoria', methods=['GET', 'POST'])
-def nuevo_categoria():
-    if request.method == 'POST':
-        nombre = request.form['name'].strip()
+    if request.method == "POST":
+        # para agregar un comentario nuevo
 
-        if not nombre:
-            flash('El nombre de la categoría no puede estar vacío.', 'danger')
-            return redirect(url_for('nuevo_categoria'))
+        # si no está logueado, lo mando a login
+        if "user_id" not in session:
+            flash("Debes iniciar sesión para comentar.")
+            return redirect(url_for("login"))
 
-        # Evitar duplicados
-        existe_categoria = Category.query.filter_by(name=nombre).first()
-        if existe_categoria:
-            flash('Ya existe una categoría con ese nombre.', 'warning')
-            return redirect(url_for('nuevo_categoria'))
+        texto = request.form.get("texto", "").strip()
+        # el comentario no puede estar vacío
+        if not texto:
+            flash("El comentario no puede estar vacío.")
+            return redirect(url_for("ver_post", post_id=post_id))
 
-        nueva_cat = Category(name=nombre)
-        db.session.add(nueva_cat)
+        # creo el comentario y lo guardo relacionado al usuario y al post
+        nuevo_comentario = Comentary(
+            texto=texto, autor_id=session["user_id"], post_id=post_id
+        )
+
+        db.session.add(nuevo_comentario)
         db.session.commit()
+        flash("Comentario agregado.")
+        return redirect(url_for("ver_post", post_id=post_id))
 
-        flash('Categoría creada con éxito.', 'success')
-        return redirect(url_for('index'))
+    # traigo todos los comentarios del post ordenados de más antiguos a más nuevos
+    comentarios = (
+        Comentary.query.filter_by(post_id=post_id)
+        .order_by(Comentary.fecha_create.asc())
+        .all()
+    )
 
-    return render_template('categoria.html')
+    # envío a la plantilla el post y los comentarios para mostrarlos
+    return render_template("verPost.html", post=post, comentarios=comentarios)
+
+
+if __name__ == "__main__":
+    app.run(
+        debug=True
+    )  # modo debug se reinicia sola cuando cambio algo

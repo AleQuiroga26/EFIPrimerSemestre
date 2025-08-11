@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}MiniBlog - Inicio{% endblock %}
+{% block title %}ElFace{% endblock %}
 
 {% block content %}
 <main class="container my-5">
 
   {% if session.get('user_id') %}
-    <h1 class="mb-4">Entradas recientes</h1>
+    <h1 class="mb-4">Posteos recientes</h1>
 
     {% if posts %}
       <div class="list-group">
