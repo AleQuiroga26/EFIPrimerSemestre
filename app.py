@@ -34,18 +34,31 @@ def index():
 
 @app.route('/nuevo_post', methods=['GET', 'POST'])
 def nuevo_post():
+
+    if 'user_id' not in session:
+        flash('Debes iniciar sesión para crear un post.', 'warning')
+        return redirect(url_for('login'))
+
     if request.method == "POST":
         titulo = request.form["titulo"]
         contenido = request.form["contenido"]
         categoria_id = request.form["categoria_id"]
 
-        nuevo = Post(titulo=titulo, contenido=contenido, categoria_id=categoria_id)
+        nuevo = Post(
+            titulo=titulo,
+            contenido=contenido,
+            categoria_id=categoria_id,
+            autor_id=session['user_id'] 
+        )
+
         db.session.add(nuevo)
         db.session.commit()
+        flash('Post creado con éxito.', 'success')
         return redirect(url_for("index"))
     
     categorias = Category.query.all()
     return render_template("nuevoPost.html", categorias=categorias)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -124,3 +137,32 @@ def logout():
     session.clear()  
     flash('Has cerrado sesión.', 'success')
     return redirect(url_for('index'))
+
+@app.route('/post/<int:post_id>')
+def ver_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template('verPost.html', post=post)
+
+@app.route('/nuevo_categoria', methods=['GET', 'POST'])
+def nuevo_categoria():
+    if request.method == 'POST':
+        nombre = request.form['name'].strip()
+
+        if not nombre:
+            flash('El nombre de la categoría no puede estar vacío.', 'danger')
+            return redirect(url_for('nuevo_categoria'))
+
+        # Evitar duplicados
+        existe_categoria = Category.query.filter_by(name=nombre).first()
+        if existe_categoria:
+            flash('Ya existe una categoría con ese nombre.', 'warning')
+            return redirect(url_for('nuevo_categoria'))
+
+        nueva_cat = Category(name=nombre)
+        db.session.add(nueva_cat)
+        db.session.commit()
+
+        flash('Categoría creada con éxito.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('categoria.html')

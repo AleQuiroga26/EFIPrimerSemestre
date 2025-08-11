@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1>{{ post.titulo }}</h1>
+    <p class="text-muted">Por {{ post.autor.name }} - {{ post.fecha_create.strftime('%d/%m/%Y %H:%M') }}</p>
+    <hr>
+    <p>{{ post.contenido }}</p>
+</div>
+{% endblock %}

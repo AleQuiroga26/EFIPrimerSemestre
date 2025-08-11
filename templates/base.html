@@ -29,6 +29,9 @@
             <a class="nav-link" href="{{ url_for('nuevo_post') }}">Crear Post</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('nuevo_categoria') }}">Crear Categoria</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('logout') }}">Cerrar Sesión ({{ session.get('user_name') }})</a>
           </li>
         {% else %}
