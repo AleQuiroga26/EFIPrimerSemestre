@@ -28,8 +28,8 @@
     {% endif %}
 
   {% else %}
-    <h1 class="mb-4">Bienvenido a MiniBlog</h1>
-    <p class="lead">MiniBlog es una app donde podés compartir tus ideas.</p>
+    <h1 class="mb-4">Bienvenido a ElFace</h1>
+    <p class="lead">ElFace es una app donde podés compartir tus ideas.</p>
     <p>Para empezar a publicar y ver el contenido completo, primero registrate o iniciá sesión.</p>
     <p>Mientras tanto, podés navegar y ver las publicaciones públicas que ya están disponibles.</p>
 
@@ -37,7 +37,7 @@
       <div class="list-group mt-4">
         {% for post in posts %}
           <a href="{{ url_for('ver_post', post_id=post.id) }}" 
-             class="list-group-item list-group-item-action mb-3 shadow-sm rounded">
+              class="list-group-item list-group-item-action mb-3 shadow-sm rounded">
             <h5 class="mb-1">{{ post.titulo }}</h5>
             <small class="text-muted">
               por {{ post.autor.name }} - {{ post.fecha_create.strftime('%d/%m/%Y %H:%M') }}
