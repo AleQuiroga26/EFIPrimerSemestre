@@ -1,4 +1,4 @@
-from flask import (
+from flask import ( #importo Flask y librerias
     Flask,
     render_template,
     request,
@@ -13,11 +13,11 @@ from werkzeug.security import generate_password_hash
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # carga las variables del archivo .env
+load_dotenv()  #carga las variables del archivo .env
 
 app = Flask(__name__)
 
-# Configuraciones usando variables de entorno
+#configuraciones usando variables de entorno
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.secret_key = os.getenv('SECRET_KEY')
 
